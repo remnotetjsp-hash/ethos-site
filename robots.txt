@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://ethosmarketingjuridico.com.br/sitemap.xml
