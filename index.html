@@ -37,7 +37,7 @@
   --raised:#ECEEF8; --accent:var(--royal); --accent-hover:var(--indigo);
   --ink-bg:var(--grafite); --ink-fg:var(--nevoa); --ink-mute:#A9ABC4; --ink-line:rgba(245,245,248,.14);
   --cta-bg:var(--royal); --cta-fg:var(--nevoa);
-  --nav-bg:rgba(245,245,248,.78);
+  --nav-bg:rgba(245,245,248,.78); --nav-solid:rgba(245,245,248,.97);
   --phone:#0E0E14; --screen:#FFFFFF; --screen-fg:#0E0E14; --screen-mute:#6B6D82; --screen-line:#E6E7EF;
   --ff-d:'Poppins',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;
   --ff-b:'Inter',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;
@@ -57,12 +57,12 @@
   --bg:#0E0E14; --fg:#F5F5F8; --mute:#A9ABC4; --line:rgba(245,245,248,.13);
   --raised:#171722; --accent:#8BA4EF; --accent-hover:#BBC7FF;
   --ink-bg:#14141E; --ink-fg:#F5F5F8; --ink-mute:#A9ABC4; --ink-line:rgba(245,245,248,.13);
-  --nav-bg:rgba(14,14,20,.78); --phone:#2A2B38; --screen:#0B0B10; --screen-fg:#F5F5F8; --screen-mute:#9C9EB4; --screen-line:#22232E; color-scheme:dark}}
+  --nav-bg:rgba(14,14,20,.78); --nav-solid:rgba(14,14,20,.97); --phone:#2A2B38; --screen:#0B0B10; --screen-fg:#F5F5F8; --screen-mute:#9C9EB4; --screen-line:#22232E; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0E0E14; --fg:#F5F5F8; --mute:#A9ABC4; --line:rgba(245,245,248,.13);
   --raised:#171722; --accent:#8BA4EF; --accent-hover:#BBC7FF;
   --ink-bg:#14141E; --ink-fg:#F5F5F8; --ink-mute:#A9ABC4; --ink-line:rgba(245,245,248,.13);
-  --nav-bg:rgba(14,14,20,.78); --phone:#2A2B38; --screen:#0B0B10; --screen-fg:#F5F5F8; --screen-mute:#9C9EB4; --screen-line:#22232E; color-scheme:dark}
+  --nav-bg:rgba(14,14,20,.78); --nav-solid:rgba(14,14,20,.97); --phone:#2A2B38; --screen:#0B0B10; --screen-fg:#F5F5F8; --screen-mute:#9C9EB4; --screen-line:#22232E; color-scheme:dark}
 
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
@@ -90,6 +90,7 @@ section{scroll-margin-top:84px}
 .btn.on-royal{--b:#F5F5F8;--bh:#FFFFFF;--t:#1800AD}
 
 /* Navegação */
+@media (hover:none){.nav{-webkit-backdrop-filter:none!important;backdrop-filter:none!important;background:var(--nav-solid)!important}}
 .nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;background:var(--nav-bg);-webkit-backdrop-filter:saturate(1.6) blur(14px);backdrop-filter:saturate(1.6) blur(14px);border-bottom:1px solid transparent;transition:border-color .3s var(--ease)}
 .nav.scrolled{border-bottom-color:var(--line)}
 .nav .wrap{display:flex;align-items:center;justify-content:space-between;gap:20px;min-height:64px}
@@ -217,6 +218,9 @@ section{scroll-margin-top:84px}
 .lb-m{position:relative;aspect-ratio:3/4;background:var(--raised);cursor:pointer;touch-action:pan-y}
 .lb-m .media{position:absolute;inset:0}
 .lb-m img{width:100%;height:100%;object-fit:cover;display:block}
+.lb-m .lo,.lb-m .hi{position:absolute;inset:0}
+.lb-m .hi{opacity:0;transition:opacity .25s}
+.lb-m .hi.ok{opacity:1}
 .lb-m .dots{position:absolute;left:0;right:0;bottom:14px;display:flex;justify-content:center;gap:6px;z-index:2}
 .lb-m .dots i{width:6px;height:6px;border-radius:50%;background:rgba(245,245,248,.5);transition:background .2s}
 .lb-m .dots i.on{background:#fff}
@@ -703,7 +707,11 @@ const POSTS = [
   function mediaHTML(p, big){
     const w = big ? 1080 : 720;
     const set = !big && p.small ? ` srcset="${esc(p.small)} 360w, ${esc(p.thumb)} 720w" sizes="(max-width:760px) 33vw, 254px"` : '';
-    return `<img src="${esc(big ? p.full : p.thumb)}"${set} alt="${esc(p.alt || 'Post da Ethos no Instagram')}" width="${w}" height="${w*4/3}" loading="${big ? 'eager' : 'lazy'}" decoding="async">`;
+    if(big){
+      const hi = p.thumb && p.full !== p.thumb ? ` srcset="${esc(p.thumb)} 720w, ${esc(p.full)} 1080w" sizes="(max-width:720px) 100vw, 560px"` : '';
+      return `<img class="lo" src="${esc(p.thumb)}" alt="" width="720" height="960" decoding="async"><img class="hi" src="${esc(p.full)}"${hi} alt="${esc(p.alt || 'Post da Ethos no Instagram')}" width="1080" height="1440" decoding="async">`;
+    }
+    return `<img src="${esc(p.thumb)}"${set} alt="${esc(p.alt || 'Post da Ethos no Instagram')}" width="${w}" height="${w*4/3}" loading="lazy" decoding="async">`;
   }
   function normalize(j){
     const list = j.posts || j.data || [];
@@ -718,6 +726,10 @@ const POSTS = [
   }
   let posts = POSTS, cur = 0, shown = 9;
   const grid = $('ig-grid'), lb = $('ig-lb'), lbm = $('ig-lbm'), more = $('ig-more');
+  if('IntersectionObserver' in window){
+    const io = new IntersectionObserver(es => { if(es.some(e => e.isIntersecting)){ grid.querySelectorAll('img[loading="lazy"]').forEach(i => i.loading = 'eager'); io.disconnect(); } }, {rootMargin:'200% 0px'});
+    io.observe(grid);
+  }
   function renderGrid(){
     grid.innerHTML = posts.slice(0, shown).map((p, i) => `<button class="tile" type="button" data-i="${i}" aria-label="Abrir post: ${esc(p.title || (p.caption || '').slice(0, 60))}"><span class="media">${mediaHTML(p, false)}</span><span class="ov"><span>${esc(p.title || p.caption || '')}</span></span></button>`).join('');
     more.hidden = posts.length <= shown;
@@ -725,9 +737,12 @@ const POSTS = [
   function renderPost(){
     const p = posts[cur];
     lbm.innerHTML = `<div class="media">${mediaHTML(p, true)}</div>`;
+    const hi = lbm.querySelector('.hi');
+    if(hi){ const ok = () => hi.classList.add('ok'); if(hi.complete && hi.naturalWidth) ok(); else hi.addEventListener('load', ok, {once:true}); }
     $('ig-title').textContent = p.title || ''; $('ig-title').hidden = !p.title;
     $('ig-cap').innerHTML = esc(p.caption).replace(/(#[\wÀ-ú]+)/g, '<span class="tag">$1</span>');
     $('ig-open').href = p.link || igURL;
+    [cur + 1, cur - 1].forEach(j => { const q = posts[j]; if(q && q.full){ const im = new Image(); im.decoding = 'async'; im.src = q.full; } });
   }
   /* O quadrado do feed cresce até virar o post aberto (View Transition) */
   function openPost(i, tile){
@@ -835,12 +850,19 @@ const POSTS = [
       gsap.set(hc[2], {attr:{cx:729.7 + d*K + H.px*36, cy:500 + H.py*28}});
     };
     drawHero();
-    gsap.ticker.add(drawHero);
+    let heroOn = false;
+    const heroLoop = [];
+    new IntersectionObserver(es => {
+      const on = es[0].isIntersecting;
+      if(on === heroOn) return; heroOn = on;
+      if(on){ gsap.ticker.add(drawHero); heroLoop.forEach(t => t.resume()); }
+      else { gsap.ticker.remove(drawHero); heroLoop.forEach(t => t.pause()); }
+    }).observe(heroSym);
     const tl = gsap.timeline({defaults:{ease:'power3.out'}});
     tl.from(heroSym, {opacity:0, scale:.94, transformOrigin:'50% 50%', duration:.9}, 0)
       .to(H, {k:0, duration:1.5, ease:'expo.out'}, .1)
-      .to(H, {idle:.2, duration:2.6, ease:'sine.inOut', yoyo:true, repeat:-1}, 1.7);
-    gsap.to(heroSym, {y:-14, duration:3.4, ease:'sine.inOut', yoyo:true, repeat:-1, delay:1.6});
+      .add(() => heroLoop.push(gsap.to(H, {idle:.2, duration:2.6, ease:'sine.inOut', yoyo:true, repeat:-1, paused:!heroOn})), 1.7);
+    heroLoop.push(gsap.to(heroSym, {y:-14, duration:3.4, ease:'sine.inOut', yoyo:true, repeat:-1, delay:1.6}));
     const qx = gsap.quickTo(H, 'px', {duration:1.1, ease:'power3.out'}), qy = gsap.quickTo(H, 'py', {duration:1.1, ease:'power3.out'});
     if(matchMedia('(pointer:fine)').matches) addEventListener('pointermove', e => { qx(e.clientX / innerWidth * 2 - 1); qy(e.clientY / innerHeight * 2 - 1); }, {passive:true});
     gsap.to(H, {sc:1.1, ease:'none', scrollTrigger:{trigger:'.hero', start:'top top', end:'bottom top', scrub:.8}});
