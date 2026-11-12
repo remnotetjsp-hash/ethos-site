@@ -312,7 +312,13 @@ input{font:500 16px var(--ff-b);color:#0E0E14;background:#F5F5F8;border:0;border
 input::placeholder{color:#6E7088}
 input:focus-visible{outline:3px solid var(--lav);outline-offset:2px}
 form .btn{justify-self:start;margin-top:6px}
-form .note{font-size:12.5px;color:rgba(245,245,248,.75);line-height:1.5}
+form .note,.ficha .note{font-size:12.5px;color:rgba(245,245,248,.75);line-height:1.5}
+.ficha{display:grid;gap:16px;background:rgba(14,14,20,.16);border-radius:var(--r-card);padding:clamp(22px,2.8vw,34px)}
+.ficha .k{font:600 var(--s-1) var(--ff-b);letter-spacing:.12em;text-transform:uppercase;color:var(--lav)}
+.ficha ol{margin:0;padding:0;list-style:none;counter-reset:f;display:grid;gap:12px}
+.ficha li{counter-increment:f;display:flex;gap:12px;align-items:center;font:500 var(--s0) var(--ff-b);color:#F5F5F8}
+.ficha li::before{content:counter(f);flex:none;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:rgba(245,245,248,.14);font:600 13px var(--ff-d)}
+.ficha .btn{justify-self:start;margin-top:4px}
 .direto{margin-top:18px}
 .direto a{color:inherit;font-weight:600;text-underline-offset:3px;white-space:nowrap}
 .status{font-size:var(--s-1);line-height:1.5;background:#F5F5F8;color:#1800AD;border-radius:14px;padding:12px 14px}
@@ -602,18 +608,16 @@ footer nav a:hover{color:var(--fg)}
     <div class="wrap grid">
       <div class="txt">
         <h2 id="h-ct">Vamos olhar o seu perfil juntos.</h2>
-        <p>Mande o @ do seu Instagram. A Ethos devolve um diagnóstico de uma página. Sem compromisso.</p>
-        <ul><li>3 pontos fortes do seu perfil</li><li>3 ajustes para fazer agora</li><li>1 recomendação de estratégia</li></ul>
+        <p>Para começar, preencha a ficha de entrada da Ethos. É dela que saem a sua identidade, os temas dos seus vídeos e a estratégia do seu perfil.</p>
+        <ul><li>9 etapas curtas, cerca de 15 minutos</li><li>As respostas ficam salvas no seu aparelho: dá para parar e voltar depois</li><li>No fim, você envia tudo pelo WhatsApp da Ethos</li></ul>
         <p class="direto" id="wa-direto" hidden>Prefere falar direto? <a id="wa-link" href="#" target="_blank" rel="noopener">WhatsApp <span id="wa-num"></span></a></p>
       </div>
-      <form id="f" novalidate>
-        <label for="f-nome">Seu nome<input id="f-nome" name="nome" autocomplete="name" required placeholder="Como prefere ser chamado"></label>
-        <label for="f-ig">@ do Instagram<input id="f-ig" name="ig" required placeholder="@seuperfil" autocapitalize="off" spellcheck="false"></label>
-        <label for="f-area">Área de atuação <i>(opcional)</i><input id="f-area" name="area" placeholder="Ex.: trabalhista, família, criminal"></label>
-        <button class="btn on-royal" type="submit">Pedir diagnóstico pelo WhatsApp <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg></button>
-        <p class="status" id="f-status" role="status" aria-live="polite" hidden></p>
-        <p class="note">Usamos esses dados só para responder ao seu pedido.</p>
-      </form>
+      <div class="ficha" id="f">
+        <p class="k">Ficha de entrada</p>
+        <ol><li>Você e a sua história</li><li>Sua atuação e o seu público</li><li>Sua identidade e as suas redes</li><li>Gravação, objetivos e investimento</li></ol>
+        <a class="btn on-royal" href="/ficha/">Preencher a ficha <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+        <p class="note">Usamos as respostas só para montar o seu trabalho, conforme a LGPD.</p>
+      </div>
     </div>
   </section>
 </main>
@@ -679,22 +683,6 @@ const POSTS = [
     document.getElementById('wa-num').textContent = WHATSAPP_TXT;
     document.getElementById('wa-direto').hidden = false;
   }
-  /* Formulário: monta a mensagem e abre o WhatsApp comercial */
-  const f = document.getElementById('f'), st = document.getElementById('f-status');
-  f.addEventListener('submit', e => {
-    e.preventDefault();
-    const nome = f.nome.value.trim(), ig = f.ig.value.trim(), area = f.area.value.trim();
-    if(!nome || !ig){
-      st.hidden = false; st.textContent = 'Preencha seu nome e o @ do Instagram para a Ethos saber qual perfil analisar.';
-      (!nome ? f.nome : f.ig).focus(); return;
-    }
-    const msg = `Olá, Ethos. Sou ${nome} e quero um diagnóstico do perfil ${ig}` + (area ? `, área de atuação: ${area}.` : '.');
-    st.hidden = false;
-    if(!WHATSAPP){ st.textContent = 'O WhatsApp comercial da Ethos ainda está sendo criado. Assim que existir, este botão abre a conversa com a sua mensagem pronta.'; return; }
-    const url = 'https://wa.me/' + WHATSAPP + '?text=' + encodeURIComponent(msg);
-    st.innerHTML = 'Abrindo o WhatsApp com a mensagem pronta. Se nada abrir, <a href="' + url + '" target="_blank" rel="noopener">toque aqui</a>.';
-    window.open(url, '_blank', 'noopener');
-  });
 
   /* ---------- Instagram ---------- */
   const $ = id => document.getElementById(id);
