@@ -319,8 +319,8 @@ function render(){
     <div class="field" data-id="lgpd"><label class="opt"><input type="checkbox" id="lgpd"${data.lgpd?' checked':''}>Autorizo a Ethos a usar estas informações para criar minha identidade, estratégia e conteúdos, conforme a LGPD.</label></div>
     <div class="field" data-id="verdade"><label class="opt"><input type="checkbox" id="verdade"${data.verdade?' checked':''}>As informações sobre formação e títulos são verdadeiras.</label><p class="err" style="display:none" id="e-ok">Marque as duas autorizações para enviar.</p></div>
     <ol class="steps-send">
-      <li><span class="n">1</span><div><strong>Avise a Ethos no WhatsApp</strong><p>A conversa abre com a mensagem pronta. É só tocar em enviar.</p><button type="button" class="${data.waSent ? 'ghost' : 'primary'}" id="wa">Abrir o WhatsApp</button></div></li>
-      <li><span class="n">2</span><div><strong>Envie a ficha em PDF</strong><p>${canShareFiles ? "Volte para esta página, toque no botão e escolha a conversa da Ethos no WhatsApp." : "Baixe o PDF e arraste para a conversa da Ethos no WhatsApp Web."}</p><button type="button" class="${data.waSent ? 'primary' : 'ghost'}" id="pdf">${canShareFiles ? "Enviar o PDF da ficha" : "Baixar o PDF da ficha"}</button></div></li>
+      <li><span class="n">1</span><div><strong>Envie as respostas no WhatsApp</strong><p>A conversa da Ethos abre com todas as respostas já escritas. É só tocar em enviar.</p><button type="button" class="${data.waSent ? 'ghost' : 'primary'}" id="wa">Enviar no WhatsApp</button></div></li>
+      <li><span class="n">2</span><div><strong>Se quiser, envie também o PDF</strong><p>${canShareFiles ? "Volte para esta página, toque no botão e escolha a conversa da Ethos no WhatsApp." : "Baixe o PDF e arraste para a conversa da Ethos no WhatsApp Web."}</p><button type="button" class="${data.waSent ? 'primary' : 'ghost'}" id="pdf">${canShareFiles ? "Enviar o PDF da ficha" : "Baixar o PDF da ficha"}</button></div></li>
     </ol>
     <button type="button" class="link" id="copy">Prefere colar o texto? Copiar respostas</button>`;
   back.style.visibility = "visible"; next.style.display = "none";
@@ -330,13 +330,13 @@ function render(){
   document.getElementById("verdade").addEventListener("change", okBoxes);
   document.getElementById("copy").addEventListener("click", async () => {
     if (!okBoxes()) return;
-    const txt = summaryText();
+    const txt = waMessage();
     try { await navigator.clipboard.writeText(txt); toast("Respostas copiadas"); }
     catch(e){ const r = document.createRange(); r.selectNodeContents(document.getElementById("sum")); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); toast("Texto selecionado: copie com o menu do aparelho"); }
   });
   document.getElementById("wa").addEventListener("click", () => {
     if (!okBoxes()) return;
-    window.open(`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(waMessage())}`, "_blank", "noopener");
+    window.open(`https://api.whatsapp.com/send?phone=${WHATSAPP}&text=${encodeURIComponent(waMessage())}`, "_blank", "noopener");
     data.waSent = true; persist();
     document.getElementById("wa").className = "ghost"; document.getElementById("pdf").className = "primary";
   });
@@ -356,11 +356,22 @@ function render(){
 }
 
 function waMessage(){
+  // mensagem completa e organizada: título da etapa em negrito, pergunta em negrito e resposta na linha de baixo
+  const clean = (s) => String(s).replace(/\r/g, "").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
   const who = (data.nome || "") + (data.oab ? ` (OAB ${data.oab})` : "");
-  const lines = [`Olá! Sou ${who || "advogado(a)"} e acabei de preencher a ficha de entrada da Ethos. Em seguida envio o PDF com todas as respostas aqui na conversa.`, ""];
-  [["Cidade","cidade"],["WhatsApp","whats"],["E-mail","email"],["Instagram","instagram"],["Área principal","area"],["Objetivo","objetivo"],["Plano de interesse","plano"]]
-    .forEach(([k,id]) => { if (data[id]) lines.push(`${k}: ${data[id]}`); });
-  return lines.join("\n");
+  const out = [`Olá! Sou ${who || "advogado(a)"} e acabei de preencher a ficha de entrada da Ethos. Seguem as minhas respostas:`];
+  STEPS.forEach((s, si) => {
+    const items = [];
+    s.fields.forEach(f => {
+      let v = data[f.id]; if (Array.isArray(v)) v = v.join(", ");
+      if (!v) return;
+      if (f.type === "scale") v = `${v} de 5`;
+      items.push(`*${f.label}*\n${clean(v)}`);
+    });
+    if (items.length) out.push(`*${si + 1}. ${s.title.toUpperCase()}*\n\n` + items.join("\n\n"));
+  });
+  out.push(`Autorizo o uso destas informações pela Ethos (LGPD) e confirmo que formação e títulos são verdadeiros.`);
+  return out.join("\n\n");
 }
 
 // PDF: gerado no próprio aparelho com jsPDF (servido pelo site, licença MIT)
