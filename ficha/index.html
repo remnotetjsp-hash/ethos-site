@@ -85,13 +85,6 @@ button[disabled]{opacity:.45;cursor:default}
 .send{display:grid;gap:10px;margin:8px 0 18px}
 .send button{width:100%}
 .note{font-size:14px;color:var(--soft)}
-.steps-send{list-style:none;margin:10px 0 18px;padding:0;display:grid;gap:14px}
-.steps-send li{display:flex;gap:14px;background:var(--surface);border:1.5px solid var(--line);border-radius:16px;padding:16px 18px}
-.steps-send .n{flex:none;width:30px;height:30px;border-radius:50%;background:var(--mist);color:var(--deep);font-family:Poppins,Inter,sans-serif;font-weight:700;font-size:15px;display:grid;place-items:center}
-.steps-send div{flex:1;min-width:0}
-.steps-send strong{display:block;font-family:Poppins,Inter,sans-serif;font-weight:600}
-.steps-send p{margin:2px 0 12px;font-size:14px;color:var(--soft)}
-.steps-send button{width:100%}
 button.link{background:none;border:0;padding:10px 0;color:var(--accent);font-weight:500;font-size:14px;text-decoration:underline;text-underline-offset:3px}
 .toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s}
 .toast.show{opacity:1}
@@ -312,19 +305,17 @@ function render(){
     return;
   }
   // final
-  const canShareFiles = (() => { try { return !!(navigator.canShare && navigator.canShare({ files: [new File(["x"], "t.pdf", { type: "application/pdf" })] })); } catch(e) { return false; } })();
   main.innerHTML = `<h1 style="font-size:clamp(24px,5vw,30px)">Revisar e enviar</h1>
     <p class="lead">Confira as respostas. Para mudar algo, use o botão Voltar.</p>
     <div class="summary" id="sum" tabindex="0" role="region" aria-label="Resumo das respostas">${esc(summaryText())}</div>
     <div class="field" data-id="lgpd"><label class="opt"><input type="checkbox" id="lgpd"${data.lgpd?' checked':''}>Autorizo a Ethos a usar estas informações para criar minha identidade, estratégia e conteúdos, conforme a LGPD.</label></div>
     <div class="field" data-id="verdade"><label class="opt"><input type="checkbox" id="verdade"${data.verdade?' checked':''}>As informações sobre formação e títulos são verdadeiras.</label><p class="err" style="display:none" id="e-ok">Marque as duas autorizações para enviar.</p></div>
-    <ol class="steps-send">
-      <li><span class="n">1</span><div><strong>Envie as respostas no WhatsApp</strong><p>A conversa da Ethos abre com todas as respostas já escritas. É só tocar em enviar.</p><button type="button" class="${data.waSent ? 'ghost' : 'primary'}" id="wa">Enviar no WhatsApp</button></div></li>
-      <li><span class="n">2</span><div><strong>Se quiser, envie também o PDF</strong><p>${canShareFiles ? "Volte para esta página, toque no botão e escolha a conversa da Ethos no WhatsApp." : "Baixe o PDF e arraste para a conversa da Ethos no WhatsApp Web."}</p><button type="button" class="${data.waSent ? 'primary' : 'ghost'}" id="pdf">${canShareFiles ? "Enviar o PDF da ficha" : "Baixar o PDF da ficha"}</button></div></li>
-    </ol>
+    <div class="send">
+      <button type="button" class="primary" id="wa">Enviar no WhatsApp da Ethos</button>
+    </div>
+    <p class="note">A conversa da Ethos abre com todas as respostas já escritas. É só tocar em enviar.</p>
     <button type="button" class="link" id="copy">Prefere colar o texto? Copiar respostas</button>`;
   back.style.visibility = "visible"; next.style.display = "none";
-  loadPDF();
   const okBoxes = () => { data.lgpd = document.getElementById("lgpd").checked; data.verdade = document.getElementById("verdade").checked; persist(); const ok = data.lgpd && data.verdade; document.getElementById("e-ok").style.display = ok ? "none" : "block"; return ok; };
   document.getElementById("lgpd").addEventListener("change", okBoxes);
   document.getElementById("verdade").addEventListener("change", okBoxes);
@@ -337,21 +328,6 @@ function render(){
   document.getElementById("wa").addEventListener("click", () => {
     if (!okBoxes()) return;
     window.open(`https://api.whatsapp.com/send?phone=${WHATSAPP}&text=${encodeURIComponent(waMessage())}`, "_blank", "noopener");
-    data.waSent = true; persist();
-    document.getElementById("wa").className = "ghost"; document.getElementById("pdf").className = "primary";
-  });
-  document.getElementById("pdf").addEventListener("click", async () => {
-    if (!okBoxes()) return;
-    if (!window.jspdf){ toast("Preparando o PDF. Toque de novo em instantes."); loadPDF(); return; }
-    let file;
-    try { file = makePDF(); } catch(e){ toast("Não foi possível gerar o PDF. Use Copiar respostas."); return; }
-    if (canShareFiles){
-      try { await navigator.share({ files: [file], text: `Ficha de entrada Ethos · ${data.nome || ""}`.trim() }); return; }
-      catch(e){ if (e && e.name === "AbortError") return; }
-    }
-    const a = document.createElement("a"); a.href = URL.createObjectURL(file); a.download = file.name;
-    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-    toast("PDF baixado");
   });
 }
 
@@ -372,110 +348,6 @@ function waMessage(){
   });
   out.push(`Autorizo o uso destas informações pela Ethos (LGPD) e confirmo que formação e títulos são verdadeiros.`);
   return out.join("\n\n");
-}
-
-// PDF: gerado no próprio aparelho com jsPDF (servido pelo site, licença MIT)
-let pdfLoading = null;
-function loadPDF(){
-  if (window.jspdf || pdfLoading) return;
-  pdfLoading = new Promise((res) => { const s = document.createElement("script"); s.src = "/ficha/jspdf.umd.min.js"; s.onload = res; s.onerror = () => { pdfLoading = null; res(); }; document.head.appendChild(s); });
-}
-// a fonte padrão do PDF cobre o português, mas não emoji nem símbolos raros
-const CP1252 = "€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ";
-function pdfText(s){
-  return String(s == null ? "" : s).normalize("NFC").replace(/\r/g, "")
-    .replace(/[→➔➡]/g, "->").replace(/[✓✔✅]/g, "v")
-    .split("").filter(c => { const n = c.charCodeAt(0); return c === "\n" || (n >= 32 && n <= 126) || (n >= 160 && n <= 255) || CP1252.includes(c); }).join("")
-    .replace(/[ \t]{2,}/g, " ").replace(/[ \t]+\n/g, "\n").trim();
-}
-function makePDF(){
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ unit: "mm", format: "a4" });
-  const W = 210, H = 297, M = 18, CW = W - 2*M, BOTTOM = H - 20;
-  const INK = [14,14,20], SOFT = [74,77,94], MUTED = [150,153,170], ACC = [41,56,204], DEEP = [24,0,173], MIST = [232,235,248];
-  const nome = pdfText(data.nome) || "Ficha de entrada";
-  const hoje = new Date().toLocaleDateString("pt-BR");
-  let y;
-  const color = (c) => doc.setTextColor(c[0], c[1], c[2]);
-  const font = (style, size) => { doc.setFont("helvetica", style); doc.setFontSize(size); };
-  const lineH = (size) => size * 0.3528 * 1.38;
-  function newPage(){
-    doc.addPage(); y = 22;
-    font("bold", 8); color(ACC); doc.text("FICHA DE ENTRADA ETHOS", M, 14);
-    font("normal", 8); color(MUTED); doc.text(nome, W - M, 14, { align: "right" });
-    doc.setDrawColor(MIST[0], MIST[1], MIST[2]); doc.setLineWidth(0.3); doc.line(M, 16.5, W - M, 16.5);
-  }
-  const need = (h) => { if (y + h > BOTTOM) newPage(); };
-
-  // capa
-  const logo = document.querySelector(".logo-light");
-  try { const cv = document.createElement("canvas"); cv.width = 540; cv.height = Math.round(540 * logo.naturalHeight / logo.naturalWidth); cv.getContext("2d").drawImage(logo, 0, 0, cv.width, cv.height); doc.addImage(cv.toDataURL("image/png"), "PNG", M, 14, 36, 36 * cv.height / cv.width, "logo", "FAST"); } catch(e) { font("bold", 20); color(INK); doc.text("Ethos", M, 24); }
-  font("bold", 8); color(ACC); doc.text("FICHA DE ENTRADA", W - M, 20, { align: "right" });
-  font("normal", 9); color(SOFT); doc.text(`Enviada em ${hoje}`, W - M, 25, { align: "right" });
-
-  y = 50;
-  font("bold", 22); color(INK);
-  doc.splitTextToSize(nome, CW).forEach(l => { doc.text(l, M, y); y += 9; });
-  const sub = [data.nome_prof, data.oab ? `OAB ${data.oab}` : "", data.cidade].map(pdfText).filter(Boolean).join("  ·  ");
-  if (sub){ font("normal", 10.5); color(SOFT); doc.splitTextToSize(sub, CW).forEach(l => { doc.text(l, M, y - 2); y += 5; }); }
-  y += 4;
-
-  // quadro de contato
-  const facts = [["WhatsApp","whats"],["E-mail","email"],["Instagram","instagram"],["Área principal","area"],["Objetivo","objetivo"],["Plano de interesse","plano"]]
-    .map(([k,id]) => [k, pdfText(data[id]) || "Não respondido"]);
-  const colW = (CW - 12) / 2, rowH = 12.5, boxH = Math.ceil(facts.length / 2) * rowH + 8;
-  doc.setFillColor(MIST[0], MIST[1], MIST[2]); doc.roundedRect(M, y, CW, boxH, 4, 4, "F");
-  facts.forEach(([k, v], i) => {
-    const cx = M + 6 + (i % 2) * (colW + 0), cy = y + 8 + Math.floor(i / 2) * rowH;
-    font("bold", 7.5); color(SOFT); doc.text(k.toUpperCase(), cx, cy);
-    font("normal", 10.5); color(INK); doc.text(doc.splitTextToSize(v, colW - 4)[0], cx, cy + 5);
-  });
-  y += boxH + 10;
-
-  // seções
-  STEPS.forEach((s, si) => {
-    need(26);
-    font("bold", 9); color(ACC); doc.text(String(si + 1).padStart(2, "0"), M, y);
-    font("bold", 14); color(INK); doc.text(pdfText(s.title), M + 9, y);
-    y += 3; doc.setDrawColor(ACC[0], ACC[1], ACC[2]); doc.setLineWidth(0.5); doc.line(M, y, M + 12, y);
-    doc.setDrawColor(MIST[0], MIST[1], MIST[2]); doc.setLineWidth(0.3); doc.line(M + 12, y, W - M, y);
-    y += 7;
-    s.fields.forEach(f => {
-      let v = data[f.id]; if (Array.isArray(v)) v = v.join(", ");
-      if (f.type === "scale" && v) v = `${v} de 5 (1 = ${f.min}, 5 = ${f.max})`;
-      const empty = !v;
-      const label = doc.splitTextToSize(pdfText(f.label), CW);
-      font(empty ? "italic" : "normal", 10.5);
-      const val = doc.splitTextToSize(empty ? "Não respondido" : pdfText(v), CW);
-      const hLabel = label.length * lineH(8.5), hVal = val.length * lineH(10.5);
-      if (hLabel + hVal + 5 <= BOTTOM - 22) need(hLabel + Math.min(hVal, lineH(10.5) * 3) + 5);
-      font("bold", 8.5); color(SOFT); label.forEach(l => { doc.text(l, M, y); y += lineH(8.5); });
-      y += 0.8;
-      val.forEach(l => { need(lineH(10.5)); font(empty ? "italic" : "normal", 10.5); color(empty ? MUTED : INK); doc.text(l, M, y); y += lineH(10.5); });
-      y += 4;
-    });
-    y += 4;
-  });
-
-  // autorizações
-  need(24);
-  doc.setDrawColor(MIST[0], MIST[1], MIST[2]); doc.setLineWidth(0.3); doc.line(M, y, W - M, y); y += 7;
-  font("bold", 9); color(INK); doc.text("Autorizações", M, y); y += 5;
-  font("normal", 9); color(SOFT);
-  ["Autorizou a Ethos a usar estas informações para criar identidade, estratégia e conteúdos, conforme a LGPD.",
-   "Declarou que as informações sobre formação e títulos são verdadeiras."]
-    .forEach(t => doc.splitTextToSize("•  " + t, CW).forEach(l => { need(5); doc.text(l, M, y); y += 4.6; }));
-
-  // rodapé
-  const n = doc.getNumberOfPages();
-  for (let i = 1; i <= n; i++){
-    doc.setPage(i); font("normal", 7.5); color(MUTED);
-    doc.text("Ethos · Marketing jurídico · ethosmarketingjuridico.com.br", M, H - 10);
-    doc.text(`Página ${i} de ${n}`, W - M, H - 10, { align: "right" });
-  }
-  doc.setProperties({ title: `Ficha de entrada Ethos · ${nome}`, author: nome, creator: "Ethos" });
-  const fname = `Ficha Ethos - ${nome.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\w ]+/g, "").trim() || "cliente"}.pdf`;
-  return new File([doc.output("blob")], fname, { type: "application/pdf" });
 }
 
 function toast(t){ const el = document.getElementById("toast"); el.textContent = t; el.classList.add("show"); setTimeout(()=>el.classList.remove("show"), 2200); }
