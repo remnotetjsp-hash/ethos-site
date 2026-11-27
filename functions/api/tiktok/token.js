@@ -9,8 +9,8 @@ export async function onRequestGet({ env, request }) {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
-      client_key: env.TIKTOK_CLIENT_KEY,
-      client_secret: env.TIKTOK_CLIENT_SECRET,
+      client_key: (env.TIKTOK_CLIENT_KEY||"").trim(),
+      client_secret: (env.TIKTOK_CLIENT_SECRET||"").trim(),
       code,
       grant_type: "authorization_code",
       redirect_uri: new URL("/tiktok/callback", request.url).toString(),
