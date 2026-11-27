@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>Conectando TikTok · Ethos</title>
+<style>
+:root{--bg:#F5F5F8;--ink:#0E0E14;--soft:#4A4D5E;--line:#D9DCE8;--accent:#2938CC;--deep:#1800AD;color-scheme:light dark}
+@media (prefers-color-scheme: dark){:root{--bg:#0E0E14;--ink:#F5F5F8;--soft:#B4B8CC;--line:#2C2E3D;--accent:#8BA4EF;--deep:#BBC7FF}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.65 Inter,"Helvetica Neue",Arial,sans-serif}
+main{max-width:720px;margin:0 auto;padding:40px 16px 72px}
+a{color:var(--accent)}
+.brand{font-family:Poppins,Arial,sans-serif;font-weight:700;color:var(--deep);text-decoration:none;font-size:18px}
+h1{font-family:Poppins,Arial,sans-serif;font-size:clamp(28px,6vw,38px);line-height:1.15;margin:28px 0 8px}
+h2{font-family:Poppins,Arial,sans-serif;font-size:20px;margin:32px 0 8px}
+p,li{color:var(--soft)} p.meta{font-size:15px}
+ul{padding-left:22px}
+footer{margin-top:48px;padding-top:20px;border-top:1px solid var(--line);font-size:15px;color:var(--soft)}
+</style>
+</head><body><main><a class="brand" href="/">Ethos</a><h1>Conectando o TikTok…</h1><p id="s">Aguarde.</p></main>
+<script>
+fetch('/api/tiktok/token'+location.search).then(r=>r.json()).then(j=>{if(j.ok){document.getElementById('s').textContent='Conta conectada. Voltando…';setTimeout(()=>location.href='/tiktok/',1200)}else document.getElementById('s').textContent='Não foi possível conectar: '+(j.erro||'erro')});
+</script></body></html>

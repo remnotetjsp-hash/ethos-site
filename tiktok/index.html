@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Publicar no TikTok · Ethos</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<style>
+:root{--bg:#F5F5F8;--ink:#0E0E14;--soft:#4A4D5E;--line:#D9DCE8;--accent:#2938CC;--deep:#1800AD;color-scheme:light dark}
+@media (prefers-color-scheme: dark){:root{--bg:#0E0E14;--ink:#F5F5F8;--soft:#B4B8CC;--line:#2C2E3D;--accent:#8BA4EF;--deep:#BBC7FF}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.65 Inter,"Helvetica Neue",Arial,sans-serif}
+main{max-width:720px;margin:0 auto;padding:40px 16px 72px}
+a{color:var(--accent)}
+.brand{font-family:Poppins,Arial,sans-serif;font-weight:700;color:var(--deep);text-decoration:none;font-size:18px}
+h1{font-family:Poppins,Arial,sans-serif;font-size:clamp(28px,6vw,38px);line-height:1.15;margin:28px 0 8px}
+h2{font-family:Poppins,Arial,sans-serif;font-size:20px;margin:32px 0 8px}
+p,li{color:var(--soft)} p.meta{font-size:15px}
+ul{padding-left:22px}
+footer{margin-top:48px;padding-top:20px;border-top:1px solid var(--line);font-size:15px;color:var(--soft)}
+</style>
+<style>button{font:600 16px Inter,sans-serif;background:var(--accent);color:#fff;border:0;border-radius:10px;padding:12px 20px;cursor:pointer}button[disabled]{opacity:.5}.box{border:1px solid var(--line);border-radius:12px;padding:20px;margin:20px 0}#msg{font-weight:600}</style>
+</head>
+<body>
+<main>
+<a class="brand" href="/">Ethos</a>
+<h1>Publicar no TikTok</h1>
+<p>Ferramenta interna da Ethos Marketing Jurídico. Envia um vídeo da Ethos como <b>rascunho</b> para a conta TikTok conectada; quem é dono da conta revisa e publica pelo aplicativo do TikTok.</p>
+<div class="box">
+<p><b>1. Conectar a conta</b></p>
+<p id="conta">Verificando…</p>
+<button id="conectar">Conectar com o TikTok</button>
+</div>
+<div class="box">
+<p><b>2. Enviar vídeo (mp4, até 50 MB)</b></p>
+<input type="file" id="arq" accept="video/mp4"><br><br>
+<button id="enviar" disabled>Enviar como rascunho</button>
+<p id="msg"></p>
+</div>
+<p><a href="/privacidade/">Privacidade</a> · <a href="/termos/">Termos</a></p>
+</main>
+<script>
+const c=document.getElementById('conta'),b=document.getElementById('conectar'),e=document.getElementById('enviar'),a=document.getElementById('arq'),m=document.getElementById('msg');
+b.onclick=()=>location.href='/api/tiktok/login';
+fetch('/api/tiktok/me').then(r=>r.json()).then(j=>{if(j.conectado){c.textContent='Conectado como '+j.usuario.display_name;b.textContent='Reconectar';e.disabled=false}else c.textContent='Nenhuma conta conectada.'});
+e.onclick=async()=>{const f=a.files[0];if(!f){m.textContent='Escolha um vídeo.';return}m.textContent='Enviando…';
+const r=await fetch('/api/tiktok/upload',{method:'POST',body:f});const j=await r.json();
+m.textContent=j.ok?'Vídeo enviado. Abra o TikTok para revisar o rascunho. Código: '+j.publish_id:'Falha: '+JSON.stringify(j)};
+</script>
+</body>
+</html>
