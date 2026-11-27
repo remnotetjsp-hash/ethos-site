@@ -17,3 +17,7 @@
 /ficha/*
   X-Robots-Tag: noindex, nofollow
   Cache-Control: no-cache
+
+/tiktok/fluxo-demo.mp4
+  Access-Control-Allow-Origin: https://developers.tiktok.com
+  Cache-Control: no-cache
