@@ -34,7 +34,7 @@ footer{margin-top:48px;padding-top:20px;border-top:1px solid var(--line);font-si
 </div>
 <div class="box">
 <p><b>2. Enviar vídeo (mp4, até 50 MB)</b></p>
-<input type="file" id="arq" accept="video/mp4"><br><br>
+<input type="file" id="arq" accept="video/mp4"> <button id="exemplo" type="button">Usar vídeo de exemplo da Ethos</button><br><br>
 <button id="enviar" disabled>Enviar como rascunho</button>
 <p id="msg"></p>
 </div>
@@ -44,7 +44,8 @@ footer{margin-top:48px;padding-top:20px;border-top:1px solid var(--line);font-si
 const c=document.getElementById('conta'),b=document.getElementById('conectar'),e=document.getElementById('enviar'),a=document.getElementById('arq'),m=document.getElementById('msg');
 b.onclick=()=>location.href='/api/tiktok/login';
 fetch('/api/tiktok/me').then(r=>r.json()).then(j=>{if(j.conectado){c.textContent='Conectado como '+j.usuario.display_name;b.textContent='Reconectar';e.disabled=false}else c.textContent='Nenhuma conta conectada.'});
-e.onclick=async()=>{const f=a.files[0];if(!f){m.textContent='Escolha um vídeo.';return}m.textContent='Enviando…';
+let ex=null;document.getElementById('exemplo').onclick=async()=>{ex=await (await fetch('/tiktok/demo.mp4')).blob();m.textContent='Vídeo de exemplo selecionado (6 s).'};
+e.onclick=async()=>{const f=ex||a.files[0];if(!f){m.textContent='Escolha um vídeo.';return}m.textContent='Enviando…';
 const r=await fetch('/api/tiktok/upload',{method:'POST',body:f});const j=await r.json();
 m.textContent=j.ok?'Vídeo enviado. Abra o TikTok para revisar o rascunho. Código: '+j.publish_id:'Falha: '+JSON.stringify(j)};
 </script>
